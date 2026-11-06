@@ -73,8 +73,32 @@ Content-Type: application/json
 ### Topic usage
 # Placeholder: usage report requests are added with the usage endpoint.
 
-### Books
-# Placeholder: book requests are added with the books endpoints.
+### Books: list (200, no contents)
+GET {{baseUrl}}/books
+
+### Books: get one (200, with contents)
+GET {{baseUrl}}/books/3
+
+### Books: get a missing book (404)
+GET {{baseUrl}}/books/999
+
+### Books: create (201, Location /books/4, empty contents)
+POST {{baseUrl}}/books
+Content-Type: application/json
+
+{
+  "title": "Release Notes",
+  "description": "What changed in each release."
+}
+
+### Books: create with validation errors (400, errors keyed title)
+POST {{baseUrl}}/books
+Content-Type: application/json
+
+{
+  "title": "   ",
+  "description": null
+}
 
 ### Book references
 # Placeholder: reference requests are added with the references endpoints.

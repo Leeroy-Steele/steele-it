@@ -12,6 +12,8 @@ public sealed class LibraryService
     private readonly TimeProvider _time;
     private readonly Dictionary<int, Topic> _topics = [];
     private int _nextTopicId;
+    private readonly Dictionary<int, Book> _books = [];
+    private int _nextBookId;
 
     public LibraryService(TimeProvider time)
     {
@@ -21,6 +23,77 @@ public sealed class LibraryService
             _topics.Add(topic.Id, topic);
         }
         _nextTopicId = Seed.NextTopicId;
+        foreach (var book in Seed.Books())
+        {
+            _books.Add(book.Id, book);
+        }
+        _nextBookId = Seed.NextBookId;
+    }
+
+    /// <summary>All books, ordered by id. Contents are not part of the list.</summary>
+    public IReadOnlyList<Book> ListBooks()
+    {
+        lock (_lock)
+        {
+            return _books.Values.OrderBy(b => b.Id).ToArray();
+        }
+    }
+
+    public Result<BookView> GetBook(int id)
+    {
+        lock (_lock)
+        {
+            if (!_books.TryGetValue(id, out var book))
+            {
+                return new Result<BookView>.NotFound();
+            }
+
+            return new Result<BookView>.Ok(ToView(book));
+        }
+    }
+
+    /// <summary>Creates a book with empty contents.</summary>
+    public Result<BookView> CreateBook(string? title, string? description)
+    {
+        lock (_lock)
+        {
+            var fields = BookRules.Validate(title, description);
+            if (!fields.IsValid)
+            {
+                return new Result<BookView>.Invalid(fields.Errors);
+            }
+
+            var book = new Book(
+                _nextBookId,
+                fields.Value!.Title,
+                fields.Value.Description,
+                _time.GetUtcNow(),
+                []
+            );
+            _books.Add(book.Id, book);
+            _nextBookId++;
+
+            return new Result<BookView>.Ok(ToView(book));
+        }
+    }
+
+    /// <summary>Fills in position and topic title. Callers must hold the lock.</summary>
+    private BookView ToView(Book book)
+    {
+        var contents = book
+            .Contents.Select(
+                (reference, index) =>
+                    new BookEntryView(
+                        reference.ReferenceId,
+                        reference.TopicId,
+                        _topics[reference.TopicId].Title,
+                        reference.Level,
+                        index + 1
+                    )
+            )
+            .ToArray();
+
+        return new BookView(book.Id, book.Title, book.Description, book.Created, contents);
     }
 
     /// <summary>All topics, ordered by id.</summary>
