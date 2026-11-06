@@ -96,6 +96,7 @@ classDiagram
 | React Router (data router) | Every screen has a URL (two tabs demonstrate conflicts), and `useBlocker` guards unsaved changes. | — |
 | Tailwind CSS | Familiar and quick; class strings stay inside a few small components. | Long class lists, kept out of page code. |
 | No form or validation libraries | Two small forms; the server owns validation. | — |
+| Length limits are constants, not configuration | The brief fixes them. One C# class feeds the rules and tests; the web app mirrors them for input hints. | Changing a limit means editing two files. Making them configurable would need an `IOptions` setting and a small endpoint for the web app. |
 | Style enforced by tooling, no pre-commit hooks | The build and `npm run lint` keep human and AI-written code consistent. Every commit is made by hand after review. | — |
 
 ### Status codes

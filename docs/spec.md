@@ -61,6 +61,8 @@ A book **owns** its references and **refers to** topics. Deleting a reference ne
 
 **Validation**
 
+The limits live in one place, `Domain/ValidationLimits.cs`; the rules and their tests use those constants. The web app mirrors them in `web/src/lib/limits.ts` for input hints only, and the server stays the authority.
+
 | Field | Rule | Error key |
 | --- | --- | --- |
 | Topic `title` | Trimmed, required, max 200 characters | `title` |

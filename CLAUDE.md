@@ -6,6 +6,7 @@
 - Only touch files your task needs. No new packages beyond those named in the task.
 - Prefer clarity over cleverness: small functions, explicit mapping, no reflection, no generic repositories.
 - Every rule lives in one place (Domain/ for the API). Controllers map requests and results only.
+- Never hard-code a length limit: use `ValidationLimits` in C# (tests included) and `src/lib/limits.ts` in the web app.
 - C#: members (methods, constructors, properties, accessors, indexers, operators, local functions) always use `{ }` block bodies, never `=> expression`. Lambdas passed as arguments are fine. The build enforces this.
 - Every controller action has a /// summary and declares every status it can return with [ProducesResponseType] (ProblemDetails for errors, ValidationProblemDetails for 400), so /swagger stays accurate.
 - Before staging: run `dotnet csharpier format .` (after `dotnet tool restore` once); then `dotnet build` and `dotnet test` must pass. From C7 on, run `npm run format`, then `npm run lint` and `npm test` at the repo root; both must pass.
