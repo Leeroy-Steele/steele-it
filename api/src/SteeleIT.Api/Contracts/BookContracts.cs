@@ -8,6 +8,12 @@ namespace SteeleIT.Api.Contracts;
 /// </summary>
 public sealed record BookRequest(string? Title, string? Description);
 
+/// <summary>
+/// Body of POST /books/{id}/references. Properties are nullable on purpose, for the same reason
+/// as TopicRequest.
+/// </summary>
+public sealed record AddReferenceRequest(int? TopicId, int? Level, int? Position);
+
 /// <summary>A book without its contents, as listed by GET /books.</summary>
 public sealed record BookSummaryResponse(
     int Id,

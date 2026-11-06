@@ -100,5 +100,79 @@ Content-Type: application/json
   "description": null
 }
 
-### Book references
-# Placeholder: reference requests are added with the references endpoints.
+### References: add at a position (201, Location /books/1, later positions shift)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{
+  "topicId": 5,
+  "level": 1,
+  "position": 2
+}
+
+### References: append (position omitted)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{
+  "topicId": 5,
+  "level": 1
+}
+
+### References: add to a missing book (404)
+POST {{baseUrl}}/books/999/references
+Content-Type: application/json
+
+{
+  "topicId": 1,
+  "level": 1
+}
+
+### References: unknown topic (400, errors keyed topicId)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{
+  "topicId": 99,
+  "level": 1
+}
+
+### References: missing topicId and level (400, errors keyed topicId and level)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{}
+
+### References: outline rule broken (400, errors keyed level)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{
+  "topicId": 1,
+  "level": 3
+}
+
+### References: position out of range (400, errors keyed position)
+POST {{baseUrl}}/books/1/references
+Content-Type: application/json
+
+{
+  "topicId": 1,
+  "level": 1,
+  "position": 50
+}
+
+### References: remove an entry with no descendants (204; reference 11 is the last entry of book 3)
+DELETE {{baseUrl}}/books/3/references/11
+
+### References: remove an entry with descendants (409, descendants lists reference 9)
+DELETE {{baseUrl}}/books/3/references/8
+
+### References: remove an entry and its descendants (204)
+DELETE {{baseUrl}}/books/3/references/8?cascade=true
+
+### References: reference belongs to another book (404)
+DELETE {{baseUrl}}/books/1/references/8
+
+### References: missing book (404)
+DELETE {{baseUrl}}/books/999/references/8

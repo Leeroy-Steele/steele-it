@@ -27,8 +27,9 @@ public abstract record Result<T>
     public sealed record Stale(int CurrentVersion) : Result<T>;
 
     /// <summary>
-    /// Other entries depend on the target, so nothing was changed. Name is the problem details
-    /// extension the dependents are reported under (for example "descendants" or "books").
+    /// Other entries depend on the target, so nothing was changed. Title is the problem details
+    /// title; Name is the extension the dependents are reported under (for example "descendants"
+    /// or "books").
     /// </summary>
-    public sealed record HasDependents(string Name, object Details) : Result<T>;
+    public sealed record HasDependents(string Title, string Name, object Details) : Result<T>;
 }

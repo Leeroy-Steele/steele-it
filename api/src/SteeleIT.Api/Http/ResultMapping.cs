@@ -39,7 +39,7 @@ public static class ResultMapping
                 return ProblemWithExtension(
                     controller,
                     StatusCodes.Status409Conflict,
-                    null,
+                    dependents.Title,
                     dependents.Name,
                     dependents.Details
                 );
