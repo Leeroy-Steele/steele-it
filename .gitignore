@@ -1,0 +1,60 @@
+# ----------------------
+# .NET / Visual Studio
+# ----------------------
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+TestResults/
+
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+.vs/
+.idea/
+.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# ----------------------
+# Node / React / Vite
+# ----------------------
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.vite/
+.cache/
+.pnpm-store/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files (keep secrets/local config out of git)
+.env.local
+.env.*.local
+
+# ----------------------
+# OS junk
+# ----------------------
+.DS_Store
+Thumbs.db
+
+# Aspire (C17)
+aspire-output/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# HTTP client secrets (VS / Rider)
+http-client.private.env.json
