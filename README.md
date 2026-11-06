@@ -23,7 +23,7 @@ Then open http://localhost:5173. To run the apps separately: `dotnet run --proje
 | Web app | http://localhost:5173 |
 | API | http://localhost:5080 (http only) |
 | Swagger UI / Scalar | http://localhost:5080/swagger, http://localhost:5080/scalar (Development only) |
-| Example requests | [`requests.http`](requests.http) |
+| Example requests | [`api/requests.http`](api/requests.http) (VS Code REST Client, Visual Studio or Rider) |
 
 **CORS:** one policy, `web-dev`, allows `http://localhost:5173` with any method and header, and exposes the `ETag` header. The web app reads the API address from `VITE_API_BASE_URL` (default `http://localhost:5080`).
 

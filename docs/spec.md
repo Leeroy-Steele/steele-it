@@ -216,7 +216,8 @@ Every error uses one shape: **Problem Details** (RFC 9457), content type `applic
 
 1. `GET /topics/{id}` returns the topic, its `version` in the body, and `ETag: "{version}"`.
 2. `PUT /topics/{id}` must send `If-Match: "{version}"`. The client builds it from the version it loaded.
-3. If the version matches, the update is applied, `version` increments and the new `ETag` is returned. If not, the response is **412** with `currentVersion`, and **nothing is changed**. A missing `If-Match` gets **428**.
+3. If the version matches, the update is applied, `version` increments and the new `ETag` is returned. If not, the response is **412** with `currentVersion`, and **nothing is changed**. A missing `If-Match` gets **428**. An `If-Match` that is not a quoted non-negative integer (including `*` and weak `W/"3"`) gets **400** with `errors["If-Match"]`.
+4. **Order of checks** (RFC 9110 §13.2.1: preconditions before the request body). A malformed `If-Match` is rejected first (400). Then an unknown topic gets 404, a missing `If-Match` 428, a stale version 412, and only then are the fields validated (400). So a stale update with invalid fields gets 412: the author resolves the conflict before fixing fields on an old copy.
 
 **Atomicity.** `LibraryService` owns all state and a single lock. Every operation, reads included, runs entirely inside it: validate, check version, write. Two concurrent PUTs on version 3 can never both succeed. One lock for the whole library is plenty for an in-memory demo, and it is the simplest correct option.
 

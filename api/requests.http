@@ -1,0 +1,80 @@
+@baseUrl = http://localhost:5080
+
+### Topics: list
+GET {{baseUrl}}/topics
+
+### Topics: get one (ETag: "1")
+GET {{baseUrl}}/topics/3
+
+### Topics: get a missing topic (404)
+GET {{baseUrl}}/topics/999
+
+### Topics: create (201, Location, ETag: "1")
+POST {{baseUrl}}/topics
+Content-Type: application/json
+
+{
+  "title": "Managing Users",
+  "body": "Add, remove and change the roles of library users.",
+  "tags": ["admin", "users"]
+}
+
+### Topics: create with validation errors (400, errors keyed title and tags[1])
+POST {{baseUrl}}/topics
+Content-Type: application/json
+
+{
+  "title": "",
+  "tags": ["pdf", "PDF"]
+}
+
+### Topics: update with the current version (200, ETag: "2")
+PUT {{baseUrl}}/topics/1
+Content-Type: application/json
+If-Match: "1"
+
+{
+  "title": "Introduction to Author-it",
+  "body": "An updated overview of Author-it.",
+  "tags": ["overview", "getting-started"]
+}
+
+### Topics: stale update, run after the one above (412, currentVersion 2, nothing changed)
+PUT {{baseUrl}}/topics/1
+Content-Type: application/json
+If-Match: "1"
+
+{
+  "title": "Edited from an old copy",
+  "body": "This edit was based on version 1.",
+  "tags": ["overview"]
+}
+
+### Topics: update a missing topic without If-Match (404 wins over 428)
+PUT {{baseUrl}}/topics/999
+Content-Type: application/json
+
+{
+  "title": "Nowhere",
+  "body": "",
+  "tags": []
+}
+
+### Topics: update without If-Match (428)
+PUT {{baseUrl}}/topics/1
+Content-Type: application/json
+
+{
+  "title": "No precondition",
+  "body": "",
+  "tags": []
+}
+
+### Topic usage
+# Placeholder: usage report requests are added with the usage endpoint.
+
+### Books
+# Placeholder: book requests are added with the books endpoints.
+
+### Book references
+# Placeholder: reference requests are added with the references endpoints.

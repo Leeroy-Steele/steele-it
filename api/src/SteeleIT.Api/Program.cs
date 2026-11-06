@@ -1,4 +1,5 @@
 using Scalar.AspNetCore;
+using SteeleIT.Api.Library;
 
 const string CorsPolicyName = "web-dev";
 
@@ -8,6 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<LibraryService>();
 builder.Services.AddCors(options =>
     options.AddPolicy(
         CorsPolicyName,
