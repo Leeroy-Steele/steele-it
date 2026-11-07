@@ -159,7 +159,7 @@ A book's contents is a flat sequence. Each entry belongs under the nearest earli
 | `GET /topics/{id}` | 200, `ETag: "{version}"` | 404 |
 | `POST /topics` | 201, `Location`, `ETag`, same shape as GET | 400 |
 | `PUT /topics/{id}` with `If-Match: "{version}"` | 200, new `ETag` | 400, 404, 412 (stale), 428 (no `If-Match`) |
-| `DELETE /topics/{id}` *(stretch)* | 204 | 404, 409 (still used by books) |
+| `DELETE /topics/{id}` | 204 | 404, 409 (still used by books) |
 | `GET /topics/{id}/usage` | 200 | 404 |
 | `GET /books` | 200, basic properties only | — |
 | `GET /books/{id}` | 200, with `contents` | 404 |
@@ -260,6 +260,8 @@ Every error uses one shape: **Problem Details** (RFC 9457), content type `applic
 **Rule: a topic that any book still references cannot be deleted.** `DELETE /topics/{id}` returns **409**, listing the books that use it (`books: [{ bookId, bookTitle, referenceCount }]`). An unused topic is deleted with 204. *(Stretch goal. Whether it was built is in the README's [Status](../README.md#status).)*
 
 **Why.** In a reuse model, deleting shared content is the most damaging mistake an author can make. It should be a deliberate two-step action: remove the references, then delete the topic. The editor explains this and links to each book.
+
+**In the editor.** A secondary **Delete topic** danger button sits by Save. If the usage report shows the topic in any book, the dialog explains that it cannot be deleted and links each book (`/books/:id`) instead of offering Delete. Otherwise a confirmation ("Delete *title*? This cannot be undone.") asks first. The server stays the authority: a 409 from the delete replaces the confirmation with the same explanation, built from the response's `books`. On success the topic's detail and usage cache entries are removed, the topics list is invalidated, and the editor navigates to `/topics`. The unsaved-changes guard does not fire for that navigation, since there is nothing left to save to.
 
 **Alternatives.** *Cascade* (delete the topic and every reference to it) silently changes books the author may not own. *Soft delete* (mark it deleted, keep the references, show "deleted topic" in outlines) is what I'd do in production for undo and audit, but it adds state to every read for little gain here.
 

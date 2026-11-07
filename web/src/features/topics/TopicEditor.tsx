@@ -1,7 +1,13 @@
-import { useEffect, useEffectEvent, useState, type FormEvent } from 'react';
-import { useBlocker } from 'react-router';
+import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from 'react';
+import { Link, useBlocker, useNavigate } from 'react-router';
 import { ApiError } from '../../api/client';
-import { useTopic, useTopicUsage, useUpdateTopic } from '../../api/topics';
+import {
+  booksFromConflict,
+  useDeleteTopic,
+  useTopic,
+  useTopicUsage,
+  useUpdateTopic,
+} from '../../api/topics';
 import type { Topic } from '../../api/types';
 import { Button } from '../../components/Button';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -43,6 +49,12 @@ export function TopicEditor({ initial }: TopicEditorProps) {
   const latest = useTopic(initial.id);
   const usage = useTopicUsage(initial.id);
   const [reloadFailed, setReloadFailed] = useState(false);
+  const remove = useDeleteTopic(initial.id);
+  const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  // Set once the topic is deleted, so the leave guard lets that one navigation through even
+  // though the form is dirty: there is nothing left to save to.
+  const deleted = useRef(false);
 
   const staleError =
     update.error instanceof ApiError && update.error.status === 412 ? update.error : null;
@@ -71,7 +83,7 @@ export function TopicEditor({ initial }: TopicEditorProps) {
 
   // Leaving with unsaved work asks first: in-app links through the router, closing or reloading
   // the tab through the browser's own prompt.
-  const blocker = useBlocker(form.isDirty && !update.isPending);
+  const blocker = useBlocker(() => form.isDirty && !update.isPending && !deleted.current);
   useEffect(() => {
     if (!form.isDirty) {
       return;
@@ -96,6 +108,28 @@ export function TopicEditor({ initial }: TopicEditorProps) {
       { input, version: form.base.version },
       { onSuccess: (updated) => form.reset(updated) },
     );
+  }
+
+  // The server is the authority: its 409 wins over the usage report, which may be out of date.
+  const usedBooks =
+    booksFromConflict(remove.error) ??
+    (usage.data !== undefined && usage.data.bookCount > 0 ? usage.data.books : null);
+
+  function closeDeleteDialog() {
+    setDeleteOpen(false);
+    remove.reset();
+  }
+
+  function confirmDelete() {
+    if (remove.isPending) {
+      return;
+    }
+    remove.mutate(undefined, {
+      onSuccess: () => {
+        deleted.current = true;
+        void navigate('/topics');
+      },
+    });
   }
 
   function discard() {
@@ -222,24 +256,82 @@ export function TopicEditor({ initial }: TopicEditorProps) {
           onRetry={() => void usage.refetch()}
         />
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-between gap-2">
           <Button
-            variant="secondary"
-            onClick={discard}
-            disabled={!form.isDirty || update.isPending}
+            variant="danger"
+            onClick={() => setDeleteOpen(true)}
+            disabled={update.isPending || remove.isPending}
           >
-            Discard changes
+            Delete topic
           </Button>
-          <Button
-            type="submit"
-            disabled={!form.isDirty || staleError !== null}
-            pending={update.isPending}
-            pendingLabel="Saving..."
-          >
-            {saveLabel}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={discard}
+              disabled={!form.isDirty || update.isPending}
+            >
+              Discard changes
+            </Button>
+            <Button
+              type="submit"
+              disabled={!form.isDirty || staleError !== null}
+              pending={update.isPending}
+              pendingLabel="Saving..."
+            >
+              {saveLabel}
+            </Button>
+          </div>
         </div>
       </form>
+
+      {deleteOpen &&
+        (usedBooks !== null ? (
+          <ConfirmDialog
+            title="This topic is still used in books"
+            message={
+              <>
+                <p>
+                  <strong>{form.base.title}</strong> cannot be deleted while books use it. Remove it
+                  from these books first:
+                </p>
+                <ul className="mt-2 list-disc pl-5">
+                  {usedBooks.map((book) => (
+                    <li key={book.bookId}>
+                      <Link
+                        to={`/books/${book.bookId}`}
+                        className="font-medium text-indigo-700 underline hover:no-underline"
+                      >
+                        {book.bookTitle}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            }
+            cancelLabel="Close"
+            onCancel={closeDeleteDialog}
+          />
+        ) : (
+          <ConfirmDialog
+            title={`Delete ${form.base.title}?`}
+            message={
+              <>
+                <p>This cannot be undone.</p>
+                {remove.isError && (
+                  <p role="alert" className="mt-2 text-red-800">
+                    {remove.error instanceof ApiError
+                      ? remove.error.title
+                      : 'Something went wrong. Try again.'}
+                  </p>
+                )}
+              </>
+            }
+            confirmLabel="Delete topic"
+            confirmVariant="danger"
+            onConfirm={confirmDelete}
+            onCancel={closeDeleteDialog}
+          />
+        ))}
 
       {blocker.state === 'blocked' && (
         <ConfirmDialog

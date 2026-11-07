@@ -26,3 +26,6 @@ public sealed record ReferenceUsageView(
     int Position,
     string? ParentTopicTitle
 );
+
+/// <summary>A book that still references a topic, with how many times. Reported by a refused delete.</summary>
+public sealed record TopicBookReferenceCount(int BookId, string BookTitle, int ReferenceCount);

@@ -33,6 +33,13 @@ export interface TopicUsage {
   books: TopicUsageBook[];
 }
 
+/** One book in the 409 from `DELETE /topics/{id}`, with how many times it uses the topic. */
+export interface TopicBookReferenceCount {
+  bookId: number;
+  bookTitle: string;
+  referenceCount: number;
+}
+
 /** A book without its contents, as listed by `GET /books`. */
 export interface BookSummary {
   id: number;

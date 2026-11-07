@@ -296,6 +296,43 @@ public sealed class LibraryService
     }
 
     /// <summary>
+    /// Deletes a topic that no book references. A topic any book still uses is not deleted:
+    /// HasDependents lists those books with how many times each uses it. Returns the deleted topic.
+    /// </summary>
+    public Result<Topic> DeleteTopic(int id)
+    {
+        lock (_lock)
+        {
+            if (!_topics.TryGetValue(id, out var topic))
+            {
+                return new Result<Topic>.NotFound();
+            }
+
+            var usedBy = _books
+                .Values.OrderBy(b => b.Id)
+                .Select(book => new TopicBookReferenceCount(
+                    book.Id,
+                    book.Title,
+                    book.Contents.Count(r => r.TopicId == id)
+                ))
+                .Where(use => use.ReferenceCount > 0)
+                .ToArray();
+            if (usedBy.Length > 0)
+            {
+                return new Result<Topic>.HasDependents(
+                    "This topic is still used in books",
+                    "books",
+                    usedBy
+                );
+            }
+
+            _topics.Remove(id);
+
+            return new Result<Topic>.Ok(topic);
+        }
+    }
+
+    /// <summary>
     /// Applies the update only when expectedVersion is the current version. Checks run in HTTP's
     /// order (RFC 9110 section 13.2.1): the topic must exist, then the precondition is checked
     /// (missing gives PreconditionRequired, out of date gives Stale), and only then is the body
