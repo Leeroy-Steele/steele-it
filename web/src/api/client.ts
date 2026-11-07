@@ -30,7 +30,7 @@ export class ApiError extends Error {
 }
 
 export interface ApiFetchOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   /** Serialised as JSON. */
   body?: unknown;
   /** Sent as the If-Match header exactly as given, so pass the quoted ETag, for example `"3"`. */

@@ -77,11 +77,12 @@ export function useAddReference(bookId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: AddReferenceInput) => addReference(bookId, input),
-    onSuccess: (book, input) => {
+    onSuccess: (book) => {
       queryClient.setQueryData(queryKeys.books.detail(bookId), book);
-      if (input.topicId !== null) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.topics.usage(input.topicId) });
-      }
+      // An insert shifts the positions of every later entry, so every usage report is stale.
+      void queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'topics' && query.queryKey[2] === 'usage',
+      });
     },
     // The outline may have changed underneath the form (a position that no longer exists, an
     // entry someone else removed), so show the server's current outline next to the error.
