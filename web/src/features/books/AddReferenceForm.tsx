@@ -5,7 +5,7 @@ import { useTopics } from '../../api/topics';
 import type { Book } from '../../api/types';
 import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
-import { numberOutline } from './outline';
+import { allowedLevelsAt, numberOutline, type LevelRange } from './outline';
 
 const AT_END = 'end';
 const UNKNOWN_ERROR = 'Something went wrong. Try again.';
@@ -15,11 +15,17 @@ interface AddReferenceFormProps {
   book: Book;
 }
 
-/** The deepest level the rules allow at an insert point: one below the entry before it. */
-function maxLevelAt(book: Book, insertAt: string): number {
-  const before = insertAt === AT_END ? book.contents.length : Number(insertAt) - 1;
-  const previous = book.contents[before - 1];
-  return previous ? previous.level + 1 : 1;
+/** The levels the rules allow at an insert point ("end" or the 1-based position). */
+function levelsAt(book: Book, insertAt: string): LevelRange {
+  const position = insertAt === AT_END ? book.contents.length + 1 : Number(insertAt);
+  return allowedLevelsAt(
+    book.contents.map((entry) => entry.level),
+    position,
+  );
+}
+
+function clamp(value: number, range: LevelRange): number {
+  return Math.min(Math.max(value, range.min), range.max);
 }
 
 export function AddReferenceForm({ book }: AddReferenceFormProps) {
@@ -35,8 +41,8 @@ export function AddReferenceForm({ book }: AddReferenceFormProps) {
     requestedInsertAt === AT_END ||
     (Number(requestedInsertAt) >= 1 && Number(requestedInsertAt) <= book.contents.length + 1);
   const insertAt = insertPointExists ? requestedInsertAt : AT_END;
-  const maxLevel = maxLevelAt(book, insertAt);
-  const level = Math.min(requestedLevel, maxLevel);
+  const allowedLevels = levelsAt(book, insertAt);
+  const level = clamp(requestedLevel, allowedLevels);
 
   const sortedTopics = [...(topics.data ?? [])].sort((a, b) => a.title.localeCompare(b.title));
 
@@ -63,7 +69,7 @@ export function AddReferenceForm({ book }: AddReferenceFormProps) {
 
   function handlePositionChange(next: string) {
     setRequestedInsertAt(next);
-    setRequestedLevel(Math.min(level, maxLevelAt(book, next)));
+    setRequestedLevel(clamp(level, levelsAt(book, next)));
   }
 
   function handleSubmit(event: FormEvent) {
@@ -148,7 +154,10 @@ export function AddReferenceForm({ book }: AddReferenceFormProps) {
               onChange={(event) => setRequestedLevel(Number(event.target.value))}
               className={SELECT_CLASSES}
             >
-              {Array.from({ length: maxLevel }, (_, index) => index + 1).map((option) => (
+              {Array.from(
+                { length: allowedLevels.max - allowedLevels.min + 1 },
+                (_, index) => allowedLevels.min + index,
+              ).map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
