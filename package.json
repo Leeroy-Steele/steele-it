@@ -1,0 +1,14 @@
+{
+  "name": "steele-it",
+  "private": true,
+  "scripts": {
+    "postinstall": "dotnet tool restore && npm --prefix web install",
+    "dev": "concurrently -n api,web -c blue,green \"dotnet run --project api/src/SteeleIT.Api\" \"npm --prefix web run dev\"",
+    "test": "dotnet test api/SteeleIT.slnx && npm --prefix web test",
+    "format": "dotnet csharpier format . && dotnet format style api/SteeleIT.slnx && dotnet format analyzers api/SteeleIT.slnx && npm --prefix web run format",
+    "lint": "dotnet csharpier check . && dotnet format style api/SteeleIT.slnx --verify-no-changes && dotnet format analyzers api/SteeleIT.slnx --verify-no-changes && npm --prefix web run lint && npm --prefix web run format:check && npm --prefix web run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
