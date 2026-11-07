@@ -10,7 +10,6 @@ This file is the source of truth for how the app behaves. When the behaviour cha
 - [Data model](#data-model)
 - [Outline rules](#outline-rules)
 - [Removing an entry with children](#removing-an-entry-with-children)
-- [Moving an entry](#moving-an-entry)
 - [API contract](#api-contract)
 - [Errors](#errors)
 - [Concurrency](#concurrency)
@@ -35,7 +34,7 @@ A summary of the brief, kept here so every requirement can be checked against th
 
 **Testing.** 3 to 5 focused API tests on the behaviour that matters most.
 
-**Stretch goals.** Warn before leaving unsaved changes · move a reference · delete a topic with a clear rule · front-end tests · single-command start.
+**Stretch goals.** Warn before leaving unsaved changes · delete a topic with a clear rule · front-end tests · single-command start.
 
 **Rubric.** Domain modelling (reuse is first class) · API design (RESTful, correct status codes, one error shape) · front-end architecture (extensible, server state in sync) · code quality (clarity over cleverness) · testing (few, well chosen) · communication (trade-offs noted, README lets another developer pick it up).
 
@@ -43,7 +42,7 @@ A summary of the brief, kept here so every requirement can be checked against th
 
 ## Data model
 
-The class diagram is in the README under [How it is designed](../README.md#how-it-is-designed).
+The class diagram is at the top of the [README](../README.md).
 
 A book **owns** its references and **refers to** topics. Deleting a reference never deletes a topic.
 
@@ -127,7 +126,7 @@ A book's contents is a flat sequence. Each entry belongs under the nearest earli
 1. The first entry is level 1.
 2. Every entry's level is at least 1 and at most one deeper than the entry before it.
 
-**How they are enforced.** Every change to a book (add, remove, move) builds the **whole candidate list** and runs one function on it, `OutlineRules.Validate`. The change is saved only if that passes. Checking the whole list means no special cases: for example, inserting a level-1 entry in front of a level-3 entry is caught because the level-3 entry now breaks rule 2.
+**How they are enforced.** Every change to a book (add, remove) builds the **whole candidate list** and runs one function on it, `OutlineRules.Validate`. The change is saved only if that passes. Checking the whole list means no special cases: for example, inserting a level-1 entry in front of a level-3 entry is caught because the level-3 entry now breaks rule 2.
 
 **Positions.** These are 1-based. On insert, `position` must be between 1 and count + 1. If it is omitted, the entry is appended. A position out of range is rejected with 400, not clamped, because clamping hides client bugs.
 
@@ -147,10 +146,6 @@ A book's contents is a flat sequence. Each entry belongs under the nearest earli
 
 **Alternatives considered.** *Outdenting the children by one level* is non-destructive, but it quietly restructures the book in a way the author did not ask for. *Always rejecting with 409* forces the author to remove each child first. Confirm-then-cascade matches how outline editors usually behave, and the server guard means no client can delete a subtree by accident.
 
-## Moving an entry
-
-*(Stretch goal.)* `PATCH /books/{id}/references/{referenceId}` with `{ "position"?, "level"? }`. Consistent with removing, **an entry moves together with its descendants**, and a level change shifts the whole block by the same amount. `position` is where the moved entry ends up in the final list. The result goes through `OutlineRules.Validate` like any other change.
-
 ## API contract
 
 | Method and path | Success | Errors |
@@ -166,7 +161,6 @@ A book's contents is a flat sequence. Each entry belongs under the nearest earli
 | `POST /books` | 201, `Location` | 400 |
 | `POST /books/{id}/references` | 201, `Location: /books/{id}`, updated book | 400 (`topicId`, `level`, `position`), 404 (book) |
 | `DELETE /books/{id}/references/{referenceId}[?cascade=true]` | 204 | 404, 409 (has descendants) |
-| `PATCH /books/{id}/references/{referenceId}` *(stretch)* | 200, updated book | 400, 404 |
 
 **Request bodies**
 
@@ -175,7 +169,6 @@ A book's contents is a flat sequence. Each entry belongs under the nearest earli
 | Create or update a topic | `{ "title": string, "body": string, "tags": string[] }` |
 | Create a book | `{ "title": string, "description": string \| null }` |
 | Add a reference | `{ "topicId": int, "level": int, "position": int \| null }` |
-| Move a reference | `{ "position": int \| null, "level": int \| null }`, at least one |
 
 Route ids use `{id:int}`, so `/topics/abc` returns 404. A `referenceId` that exists but belongs to a different book returns 404.
 
@@ -206,7 +199,7 @@ Every error uses one shape: **Problem Details** (RFC 9457), content type `applic
 }
 ```
 
-**Error keys** are camelCase and match the form fields: `title`, `body`, `tags[i]`, `description`, `topicId`, `level`, `position`. A tag error names the exact tag, so the UI can highlight that chip. A test checks the keys.
+**Error keys** are camelCase and match the form fields: `title`, `body`, `tags[i]`, `description`, `topicId`, `level`, `position`. A tag error names the exact tag, so the UI can highlight that chip. A test checks the keys. Header errors use the header name (`If-Match`). A body that is not valid JSON never reaches the validators or any other check: ASP.NET rejects it first with 400 and its own keys (such as `$.topicId`).
 
 > Implementation note: request DTO properties are nullable on purpose. With nullable reference types on, `[ApiController]` treats non-nullable properties as implicitly `[Required]` and reports them with PascalCase keys, which would bypass the domain validators.
 
@@ -257,7 +250,7 @@ Every error uses one shape: **Problem Details** (RFC 9457), content type `applic
 
 ## Deleting a topic
 
-**Rule: a topic that any book still references cannot be deleted.** `DELETE /topics/{id}` returns **409**, listing the books that use it (`books: [{ bookId, bookTitle, referenceCount }]`). An unused topic is deleted with 204. *(Stretch goal. Whether it was built is in the README's [Status](../README.md#status).)*
+**Rule: a topic that any book still references cannot be deleted.** `DELETE /topics/{id}` returns **409**, listing the books that use it (`books: [{ bookId, bookTitle, referenceCount }]`). An unused topic is deleted with 204. *(Stretch goal. Whether it was built is in the README's [unfinished work](../README.md#what-is-unfinished-and-what-you-would-do-differently-with-more-time).)*
 
 **Why.** In a reuse model, deleting shared content is the most damaging mistake an author can make. It should be a deliberate two-step action: remove the references, then delete the topic. The editor explains this and links to each book.
 
@@ -299,7 +292,7 @@ web/src
 | --- | --- | --- |
 | Create topic | `['topics', id]` from the response | `['topics']` (exact) |
 | Save topic | `['topics', id]` from the response | `['topics']` (exact), `['topics', id, 'usage']`, `['books']` (prefix: every book, so outlines show the new title) |
-| Add or move a reference | `['books', id]` from the response | That topic's usage |
+| Add a reference | `['books', id]` from the response | Every usage query (an insert shifts the positions of later entries, which other topics' reports show) |
 | Remove a reference | — | `['books', id]`, every usage query (a cascade can affect several topics) |
 | Delete topic | Remove `['topics', id]` and its usage | `['topics']` (exact) |
 
@@ -326,7 +319,6 @@ The editor at `/topics/:id` is the heart of the front end. Its key rule: **the f
 
 - **Add a reference:** pick a topic, an "Insert at" point ("At the start", "After 2 Installing the Desktop Client", …, "At the end"), and a level. The level list only offers values the rules allow at that point. The server still validates, and its field errors show next to the inputs.
 - **Remove a reference:** see [Removing an entry with children](#removing-an-entry-with-children).
-- **Move** *(stretch)*: Indent and Outdent buttons, plus "Move…" with the same Insert-at and Level inputs.
 
 ## Testing
 
@@ -349,7 +341,7 @@ Style is enforced by tooling, so human- and AI-written code look the same.
 - **C#:** the root `.editorconfig` defines the style: file-scoped namespaces, braces always, `var` when the type is obvious, `_camelCase` private fields, `I`-prefixed interfaces, PascalCase constants, no unused usings, and `{ }` block bodies for every member (no expression-bodied `=>` methods, properties, constructors or accessors; lambdas passed as arguments are allowed). Underscores are allowed in test method names. `api/Directory.Build.props` turns on nullable reference types, warnings as errors, `AnalysisLevel latest-recommended` and `EnforceCodeStyleInBuild`, so a style break fails `dotnet build`.
 - **C# layout:** CSharpier owns every line break, indent and blank line in C# and project files, the way Prettier does for TypeScript. It is a local dotnet tool (`.config/dotnet-tools.json`) configured in `.csharpierrc.json` (100-character lines, LF). `dotnet format` runs only its `style` and `analyzers` passes, and IDE0055 is switched off, so the two never conflict.
 - **TypeScript:** `strict`. ESLint runs with `--max-warnings 0`; `no-explicit-any` and `react-hooks/exhaustive-deps` are errors. Prettier formats everything, with `eslint-config-prettier` so the two never conflict and `prettier-plugin-tailwindcss` to sort class names.
-- **Commands (repo root):** `npm run format` fixes formatting (CSharpier, `dotnet format style` and `analyzers`, Prettier). `npm run lint` checks everything (`dotnet csharpier check .`, `dotnet format style` and `analyzers` with `--verify-no-changes`, ESLint, Prettier, `tsc`). Before the root scripts exist (C1 to C6), run `dotnet tool restore` once, then `dotnet csharpier format .`.
+- **Commands (repo root):** `npm run format` fixes formatting (CSharpier, `dotnet format style` and `analyzers`, Prettier). `npm run lint` checks everything (`dotnet csharpier check .`, `dotnet format style` and `analyzers` with `--verify-no-changes`, ESLint, Prettier, `tsc`). On a fresh clone, `npm install` restores CSharpier (`dotnet tool restore`).
 - **Switching a rule off** happens in `.editorconfig` or `eslint.config.js` with a comment saying why. Never inline (`#pragma`, `eslint-disable`).
 - **Naming:** explicit mapping methods between domain records and DTOs; no AutoMapper, no reflection, no generic repositories.
-- **Commits:** Conventional Commits (`feat(api): …`, `test(api): …`, `docs: …`), one per component. From the web app onwards, each feature is built on a short-lived branch (`feat/…`, `chore/…`, `test/…`, `docs/…`) and merged into `main` with `--no-ff`, so the history shows each feature as one merge; components that form one feature share a branch.
+- **Commits:** messages mostly follow Conventional Commits (`feat(api): …`, `test(api): …`, `docs: …`), one per component. From the web app onwards, each feature is built on a short-lived branch (`feat/…`, `chore/…`, `test/…`, `docs/…`) and merged into `main` with `--no-ff`, so the history shows each feature as one merge; components that form one feature share a branch.

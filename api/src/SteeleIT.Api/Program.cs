@@ -28,9 +28,9 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(CorsPolicyName);
 
-app.MapOpenApi();
 if (app.Environment.IsDevelopment())
 {
+    app.MapOpenApi();
     app.MapScalarApiReference();
     app.UseSwaggerUI(o => o.SwaggerEndpoint("/openapi/v1.json", "v1"));
 }
