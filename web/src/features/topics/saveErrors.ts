@@ -22,7 +22,10 @@ export function toSaveErrors(error: Error | null): SaveErrors {
     result.general.push(UNKNOWN_ERROR);
     return result;
   }
-  // 412 lands here for now; the conflict banner will take it over.
+  // A 412 is a conflict, which ConflictBanner explains. A 428 is a client bug, so it stays general.
+  if (error.status === 412) {
+    return result;
+  }
   if (error.status !== 400) {
     result.general.push(error.title);
     return result;

@@ -6,6 +6,7 @@ interface ConfirmDialogProps {
   /** A node rather than a string so callers can emphasise titles in the message. */
   message: ReactNode;
   confirmLabel: string;
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -15,6 +16,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -44,7 +46,7 @@ export function ConfirmDialog({
       <div className="mt-2 text-sm text-slate-700">{message}</div>
       <div className="mt-6 flex justify-end gap-2">
         <Button variant="secondary" onClick={onCancel}>
-          Cancel
+          {cancelLabel}
         </Button>
         <Button onClick={onConfirm}>{confirmLabel}</Button>
       </div>
