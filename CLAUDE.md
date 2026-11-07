@@ -2,7 +2,8 @@
 
 - docs/spec.md is the spec. Read the sections your task names before coding. If the code and the spec disagree, stop and ask.
 - If your task changes behaviour, update the matching docs/spec.md section in the same change. Do not edit README.md unless the task says so: it is the human-facing overview.
-- Stage your changes with `git add`. Never commit, amend, rebase or push.
+- Work only on the branch your task names. If it exists, `git switch` to it. If not, create it from main: `git switch main`, then `git switch -c <branch>`. If the working tree is not clean before you start, stop and ask.
+- Stage your changes with `git add`. Never commit, amend, merge, rebase or push, and never switch branches mid-task.
 - Only touch files your task needs. No new packages beyond those named in the task.
 - Prefer clarity over cleverness: small functions, explicit mapping, no reflection, no generic repositories.
 - Every rule lives in one place (Domain/ for the API). Controllers map requests and results only.
