@@ -49,6 +49,17 @@ export function descendantsFromConflict(error: unknown): Entry[] | null {
   return listed as Entry[];
 }
 
+/** What to tell the author when removing an entry fails for any reason other than the 409. */
+export function removeErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 404) {
+    return 'That entry was already removed. The outline now shows the latest version.';
+  }
+  if (error instanceof ApiError) {
+    return error.title;
+  }
+  return 'Something went wrong. Try again.';
+}
+
 export function useBooks() {
   return useQuery({ queryKey: queryKeys.books.all, queryFn: fetchBooks });
 }
@@ -72,6 +83,11 @@ export function useAddReference(bookId: number) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.topics.usage(input.topicId) });
       }
     },
+    // The outline may have changed underneath the form (a position that no longer exists, an
+    // entry someone else removed), so show the server's current outline next to the error.
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.books.detail(bookId) });
+    },
   });
 }
 
@@ -91,6 +107,13 @@ export function useRemoveReference(bookId: number) {
       void queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'topics' && query.queryKey[2] === 'usage',
       });
+    },
+    // Any failure except the expected "has entries beneath it" 409 can mean the outline is out
+    // of date (for example the entry was already removed), so fetch the server's current one.
+    onError: (error) => {
+      if (descendantsFromConflict(error) === null) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.books.detail(bookId) });
+      }
     },
   });
 }

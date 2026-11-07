@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { descendantsFromConflict, useBook, useRemoveReference } from '../../api/books';
+import {
+  descendantsFromConflict,
+  removeErrorMessage,
+  useBook,
+  useRemoveReference,
+} from '../../api/books';
 import { ApiError } from '../../api/client';
 import type { Entry } from '../../api/types';
 import { Button } from '../../components/Button';
@@ -57,9 +62,7 @@ export function BookOutlinePage() {
           if (descendants) {
             setPendingCascade({ entry, descendants });
           } else {
-            setRemoveError(
-              error instanceof ApiError ? error.title : 'Something went wrong. Try again.',
-            );
+            setRemoveError(removeErrorMessage(error));
           }
         },
       },
@@ -73,9 +76,7 @@ export function BookOutlinePage() {
         onSuccess: () => setPendingCascade(null),
         onError: (error) => {
           setPendingCascade(null);
-          setRemoveError(
-            error instanceof ApiError ? error.title : 'Something went wrong. Try again.',
-          );
+          setRemoveError(removeErrorMessage(error));
         },
       },
     );
