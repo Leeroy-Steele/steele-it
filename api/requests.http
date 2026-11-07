@@ -70,8 +70,14 @@ Content-Type: application/json
   "tags": []
 }
 
-### Topic usage
-# Placeholder: usage report requests are added with the usage endpoint.
+### Topics: usage report (200, 3 references across 2 books)
+GET {{baseUrl}}/topics/3/usage
+
+### Topics: usage of an unused topic (200, zero counts, empty books; run after creating a topic)
+GET {{baseUrl}}/topics/6/usage
+
+### Topics: usage of a missing topic (404)
+GET {{baseUrl}}/topics/999/usage
 
 ### Books: list (200, no contents)
 GET {{baseUrl}}/books

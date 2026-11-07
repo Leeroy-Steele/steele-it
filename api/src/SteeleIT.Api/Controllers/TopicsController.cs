@@ -37,6 +37,27 @@ public sealed class TopicsController(LibraryService library) : ControllerBase
         );
     }
 
+    /// <summary>
+    /// Shows every book and position where the topic is used. An unused topic returns zero counts.
+    /// </summary>
+    [HttpGet("{id:int}/usage")]
+    [ProducesResponseType<TopicUsageResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status404NotFound,
+        "application/problem+json"
+    )]
+    public IActionResult GetUsage(int id)
+    {
+        return ResultMapping.ToActionResult(
+            this,
+            library.GetUsage(id),
+            usage =>
+            {
+                return Ok(TopicUsageResponse.From(usage));
+            }
+        );
+    }
+
     /// <summary>Creates a topic at version 1.</summary>
     [HttpPost]
     [ProducesResponseType<TopicResponse>(StatusCodes.Status201Created)]

@@ -173,6 +173,60 @@ public sealed class LibraryService
         }
     }
 
+    /// <summary>
+    /// Every reference to the topic, grouped by book. Books are ordered by id and references by
+    /// position. A topic that exists but is unused is Ok with zero counts and no books.
+    /// </summary>
+    public Result<TopicUsageView> GetUsage(int topicId)
+    {
+        lock (_lock)
+        {
+            if (!_topics.TryGetValue(topicId, out var topic))
+            {
+                return new Result<TopicUsageView>.NotFound();
+            }
+
+            var books = new List<BookUsageView>();
+            foreach (var book in _books.Values.OrderBy(b => b.Id))
+            {
+                var references = new List<ReferenceUsageView>();
+                for (var index = 0; index < book.Contents.Count; index++)
+                {
+                    var reference = book.Contents[index];
+                    if (reference.TopicId != topicId)
+                    {
+                        continue;
+                    }
+
+                    var parent = OutlineRules.ParentOf(book.Contents, index);
+                    references.Add(
+                        new ReferenceUsageView(
+                            reference.ReferenceId,
+                            reference.Level,
+                            index + 1,
+                            parent is null ? null : _topics[parent.TopicId].Title
+                        )
+                    );
+                }
+
+                if (references.Count > 0)
+                {
+                    books.Add(new BookUsageView(book.Id, book.Title, references));
+                }
+            }
+
+            return new Result<TopicUsageView>.Ok(
+                new TopicUsageView(
+                    topic.Id,
+                    topic.Title,
+                    books.Sum(b => b.References.Count),
+                    books.Count,
+                    books
+                )
+            );
+        }
+    }
+
     /// <summary>Fills in position and topic title. Callers must hold the lock.</summary>
     private BookView ToView(Book book)
     {

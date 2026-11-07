@@ -90,6 +90,48 @@ public class TopicsApiTests
         Assert.Equal(["tags[1]", "tags[2]", "title"], keys);
     }
 
+    // The reuse report must count every use, including repeats inside one book: the Administrator
+    // Guide uses topic 3 twice, under different parents, and both uses are listed in outline order.
+    [Fact]
+    public async Task UsageReport_CountsRepeatsWithinABook()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/topics/3/usage");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var usage = await ReadJson(response);
+        var root = usage.RootElement;
+        Assert.Equal(3, root.GetProperty("totalReferences").GetInt32());
+        Assert.Equal(2, root.GetProperty("bookCount").GetInt32());
+
+        var books = root.GetProperty("books").EnumerateArray().ToArray();
+        Assert.Equal(2, books.Length);
+
+        Assert.Equal("Getting Started Guide", books[0].GetProperty("bookTitle").GetString());
+        Assert.Equal([(3, "Installing the Desktop Client")], ReadReferences(books[0]));
+
+        Assert.Equal("Administrator Guide", books[1].GetProperty("bookTitle").GetString());
+        Assert.Equal(
+            [(2, "Installing the Desktop Client"), (4, "Publishing to PDF")],
+            ReadReferences(books[1])
+        );
+    }
+
+    private static (int Position, string? Parent)[] ReadReferences(JsonElement book)
+    {
+        return book.GetProperty("references")
+            .EnumerateArray()
+            .Select(r =>
+                (
+                    r.GetProperty("position").GetInt32(),
+                    r.GetProperty("parentTopicTitle").GetString()
+                )
+            )
+            .ToArray();
+    }
+
     private static async Task<HttpResponseMessage> PutTopic(
         HttpClient client,
         int id,
