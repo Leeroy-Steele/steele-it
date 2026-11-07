@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
 import { queryKeys } from './queryKeys';
-import type { Topic } from './types';
+import type { Topic, TopicUsage } from './types';
 
 /** The request body for creating or updating a topic. */
 export interface TopicInput {
@@ -36,6 +36,18 @@ export function useTopic(id: number) {
   return useQuery({
     queryKey: queryKeys.topics.detail(id),
     queryFn: () => fetchTopic(id),
+    enabled: Number.isInteger(id) && id > 0,
+  });
+}
+
+export function fetchTopicUsage(id: number): Promise<TopicUsage> {
+  return apiFetch<TopicUsage>(`/topics/${id}/usage`);
+}
+
+export function useTopicUsage(id: number) {
+  return useQuery({
+    queryKey: queryKeys.topics.usage(id),
+    queryFn: () => fetchTopicUsage(id),
     enabled: Number.isInteger(id) && id > 0,
   });
 }
