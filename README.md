@@ -127,11 +127,30 @@ I chose this over outdenting the children, which quietly restructures a book the
 
 ## Status
 
-*Completed at the end: what is built and the total time spent.*
+**Built:** everything in the brief's Parts A and B, plus three stretch goals.
+
+- **API:** all 10 endpoints, seeded as in the brief, with 5 API integration tests and unit tests for the outline, topic and book rules.
+- **Web:** the topic library, the topic editor (field errors, unsaved changes, reuse warning, edit conflicts) and the book outline (add, remove, open in editor).
+- **Stretch:** single-command start (`npm run dev`), a warning before leaving unsaved changes, and deleting a topic (blocked while books use it, as described above).
+- **Front-end tests:** the API client, outline numbering and the topic editor (conflicts, field errors, reuse warning, delete).
+
+**Time spent:** about __ hours.
 
 ## With more time
 
-*Completed at the end: every planned item that was not finished, with a line on how I would approach it.*
+**Planned but not finished**
+
+- **Move a reference.** `PATCH /books/{id}/references/{referenceId}` taking a new position and/or level. An entry moves together with the entries indented beneath it, the same unit as removal, and the result goes through the same outline validator. In the outline: Indent and Outdent buttons, plus a Move form reusing the Add reference inputs.
+- **Run with Aspire.** An AppHost that starts the API and the Vite app together, with the Aspire dashboard for logs and traces. The CORS origin would move into configuration, because Aspire chooses the web app's port.
+- **Docker Compose.** Generated from the same AppHost (`aspire deploy`), with the web app served as a static site behind a proxy to the API, so no CORS is needed in containers.
+- **Deleting a topic that is already gone.** If another tab deleted it first, the API returns 404 and the dialog shows "Not Found". It should send the author back to the library instead.
+
+**Design improvements**
+
+- Insert relative to a reference (`afterReferenceId`) instead of a position, so concurrent outline edits land where the author intended.
+- A contents version on books, using the same `If-Match` mechanism as topics.
+- Soft delete for topics, with undo and an audit trail of who changed what.
+- Persistence (EF Core): `LibraryService` is the only class that would change shape.
 
 ## How I used AI
 
