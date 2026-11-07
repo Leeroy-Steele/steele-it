@@ -79,6 +79,15 @@ GET {{baseUrl}}/topics/6/usage
 ### Topics: usage of a missing topic (404)
 GET {{baseUrl}}/topics/999/usage
 
+### Topics: delete a used topic (409, lists the books that use it)
+DELETE {{baseUrl}}/topics/3
+
+### Topics: delete an unused topic (204; run after creating a topic)
+DELETE {{baseUrl}}/topics/6
+
+### Topics: delete a missing topic (404)
+DELETE {{baseUrl}}/topics/999
+
 ### Books: list (200, no contents)
 GET {{baseUrl}}/books
 

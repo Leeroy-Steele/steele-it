@@ -1,5 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { queryKeys } from '../../api/queryKeys';
@@ -69,19 +77,28 @@ interface FakeServer {
   topic: Topic;
   usage: Reply;
   put: Reply;
+  del: Reply;
 }
 
 function stubApi(overrides: Partial<FakeServer> = {}) {
-  const server: FakeServer = { topic, usage: [200, unused], put: [200, topic], ...overrides };
+  const server: FakeServer = {
+    topic,
+    usage: [200, unused],
+    put: [200, topic],
+    del: [204, null],
+    ...overrides,
+  };
   const fetchStub = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     let reply: Reply = [200, server.topic];
     if (init?.method === 'PUT') {
       reply = server.put;
+    } else if (init?.method === 'DELETE') {
+      reply = server.del;
     } else if (url.endsWith('/usage')) {
       reply = server.usage;
     }
     return Promise.resolve(
-      new Response(JSON.stringify(reply[1]), {
+      new Response(reply[0] === 204 ? null : JSON.stringify(reply[1]), {
         status: reply[0],
         headers: { 'Content-Type': 'application/json' },
       }),
@@ -422,4 +439,99 @@ it('asks the browser to confirm unload only while dirty', () => {
   const dirty = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(dirty);
   expect(dirty.defaultPrevented).toBe(true);
+});
+
+function deleteCalls(fetchStub: ReturnType<typeof vi.fn>) {
+  return fetchStub.mock.calls.filter(([, init]) => (init as RequestInit)?.method === 'DELETE');
+}
+
+// Deleting is irreversible, so it is a deliberate two-step action, and what it leaves behind
+// (cache entries, the leave guard) must not trip over the topic being gone.
+it('confirms, deletes an unused topic, clears its cache and leaves without the leave guard', async () => {
+  const { fetchStub } = stubApi();
+  const queryClient = newQueryClient();
+  const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+  const remove = vi.spyOn(queryClient, 'removeQueries');
+  renderEditor(queryClient);
+  await screen.findByText('Not used in any book yet.');
+  // Dirty on purpose: the guard must not fire for the navigation after a delete.
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Mine' } });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Delete topic' }));
+  expect(screen.getByText('Delete Installing the Desktop Client?')).toBeInTheDocument();
+  expect(screen.getByText('This cannot be undone.')).toBeInTheDocument();
+  expect(deleteCalls(fetchStub)).toHaveLength(0);
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete topic' }));
+
+  expect(await screen.findByText('Topic library')).toBeInTheDocument();
+  expect(screen.queryByText('Discard unsaved changes?')).not.toBeInTheDocument();
+  const [url] = deleteCalls(fetchStub)[0] as [string];
+  expect(url).toMatch(/\/topics\/7$/);
+  expect(remove).toHaveBeenCalledWith({ queryKey: queryKeys.topics.detail(7) });
+  expect(remove).toHaveBeenCalledWith({ queryKey: queryKeys.topics.usage(7) });
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.topics.all, exact: true });
+});
+
+it('does not delete when the confirmation is cancelled', async () => {
+  const { fetchStub } = stubApi();
+  renderEditor();
+  await screen.findByText('Not used in any book yet.');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Delete topic' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+  expect(screen.queryByText('This cannot be undone.')).not.toBeInTheDocument();
+  expect(deleteCalls(fetchStub)).toHaveLength(0);
+});
+
+// A used topic cannot be deleted, so the dialog says why and points at the books instead of
+// offering a button the server would refuse.
+it('explains a used topic cannot be deleted, linking each book and offering no Delete', async () => {
+  const { fetchStub } = stubApi({ usage: [200, usedTwice] });
+  renderEditor();
+  await screen.findByText(/Saving changes this topic in all 2 books/);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Delete topic' }));
+
+  const dialog = screen.getByRole('dialog');
+  expect(within(dialog).getByText('This topic is still used in books')).toBeInTheDocument();
+  expect(within(dialog).getByRole('link', { name: 'Getting Started Guide' })).toHaveAttribute(
+    'href',
+    '/books/1',
+  );
+  expect(within(dialog).getByRole('link', { name: 'Administrator Guide' })).toHaveAttribute(
+    'href',
+    '/books/3',
+  );
+  expect(within(dialog).queryByRole('button', { name: 'Delete topic' })).not.toBeInTheDocument();
+  expect(deleteCalls(fetchStub)).toHaveLength(0);
+});
+
+// The usage report can be out of date. The server decides, and its 409 replaces the confirmation.
+it('shows the books from a 409 when the usage report was out of date', async () => {
+  stubApi({
+    del: [
+      409,
+      {
+        title: 'This topic is still used in books',
+        status: 409,
+        books: [{ bookId: 2, bookTitle: 'Publishing Handbook', referenceCount: 1 }],
+      },
+    ],
+  });
+  renderEditor();
+  await screen.findByText('Not used in any book yet.');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Delete topic' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete topic' }));
+
+  const dialog = screen.getByRole('dialog');
+  expect(await within(dialog).findByText('This topic is still used in books')).toBeInTheDocument();
+  expect(within(dialog).getByRole('link', { name: 'Publishing Handbook' })).toHaveAttribute(
+    'href',
+    '/books/2',
+  );
+  expect(within(dialog).queryByRole('button', { name: 'Delete topic' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Topic library')).not.toBeInTheDocument();
 });

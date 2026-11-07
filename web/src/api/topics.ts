@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from './client';
+import { ApiError, apiFetch } from './client';
 import { queryKeys } from './queryKeys';
-import type { Topic, TopicUsage } from './types';
+import type { Topic, TopicBookReferenceCount, TopicUsage } from './types';
 
 /** The request body for creating or updating a topic. */
 export interface TopicInput {
@@ -25,6 +25,26 @@ export function fetchTopic(id: number): Promise<Topic> {
 /** `version` is the one the edit was based on; a stale one gets a 412. */
 export function updateTopic(id: number, input: TopicInput, version: number): Promise<Topic> {
   return apiFetch<Topic>(`/topics/${id}`, { method: 'PUT', body: input, ifMatch: `"${version}"` });
+}
+
+/** Succeeds only for a topic no book uses; otherwise 404 or a 409 listing the books. */
+export function deleteTopic(id: number): Promise<void> {
+  return apiFetch<void>(`/topics/${id}`, { method: 'DELETE' });
+}
+
+/**
+ * The books a 409 from DELETE says still use the topic, exactly as the server listed them.
+ * Null when the error is not that 409, or the list is missing or empty.
+ */
+export function booksFromConflict(error: unknown): TopicBookReferenceCount[] | null {
+  if (!(error instanceof ApiError) || error.status !== 409) {
+    return null;
+  }
+  const listed = error.extensions.books;
+  if (!Array.isArray(listed) || listed.length === 0) {
+    return null;
+  }
+  return listed as TopicBookReferenceCount[];
 }
 
 export function useTopics() {
@@ -68,6 +88,25 @@ export function useUpdateTopic(id: number) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.topics.all, exact: true });
       void queryClient.invalidateQueries({ queryKey: queryKeys.topics.usage(id) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.books.all });
+    },
+  });
+}
+
+export function useDeleteTopic(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteTopic(id),
+    onSuccess: () => {
+      // The topic is gone: drop its cache entries rather than refetching them into a 404.
+      queryClient.removeQueries({ queryKey: queryKeys.topics.detail(id) });
+      queryClient.removeQueries({ queryKey: queryKeys.topics.usage(id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.topics.all, exact: true });
+    },
+    // A 409 means the usage report was out of date, so fetch the server's current one.
+    onError: (error) => {
+      if (booksFromConflict(error) !== null) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.topics.usage(id) });
+      }
     },
   });
 }

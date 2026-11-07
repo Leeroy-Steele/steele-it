@@ -125,4 +125,30 @@ public sealed class TopicsController(LibraryService library) : ControllerBase
             }
         );
     }
+
+    /// <summary>
+    /// Deletes a topic that no book uses. A topic still used in books returns 409 listing them
+    /// (bookId, bookTitle, referenceCount) and changes nothing.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status404NotFound,
+        "application/problem+json"
+    )]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status409Conflict,
+        "application/problem+json"
+    )]
+    public IActionResult Delete(int id)
+    {
+        return ResultMapping.ToActionResult(
+            this,
+            library.DeleteTopic(id),
+            _ =>
+            {
+                return NoContent();
+            }
+        );
+    }
 }

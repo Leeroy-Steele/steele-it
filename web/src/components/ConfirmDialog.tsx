@@ -5,9 +5,13 @@ interface ConfirmDialogProps {
   title: string;
   /** A node rather than a string so callers can emphasise titles in the message. */
   message: ReactNode;
-  confirmLabel: string;
+  /** Shown on the confirm button. Needed only with onConfirm. */
+  confirmLabel?: string;
+  /** `danger` for an action that cannot be undone. */
+  confirmVariant?: 'primary' | 'danger';
   cancelLabel?: string;
-  onConfirm: () => void;
+  /** Leave out when there is nothing to confirm: the dialog then only informs, with one button. */
+  onConfirm?: () => void;
   onCancel: () => void;
 }
 
@@ -16,6 +20,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  confirmVariant = 'primary',
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
@@ -48,7 +53,11 @@ export function ConfirmDialog({
         <Button variant="secondary" onClick={onCancel}>
           {cancelLabel}
         </Button>
-        <Button onClick={onConfirm}>{confirmLabel}</Button>
+        {onConfirm && (
+          <Button variant={confirmVariant} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        )}
       </div>
     </dialog>
   );
