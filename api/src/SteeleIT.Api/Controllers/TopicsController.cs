@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using SteeleIT.Api.Contracts;
-using SteeleIT.Api.Http;
-using SteeleIT.Api.Library;
+using SteeleIT.Api.Repository.Models.DTOs;
+using SteeleIT.Api.Services;
 
 namespace SteeleIT.Api.Controllers;
 

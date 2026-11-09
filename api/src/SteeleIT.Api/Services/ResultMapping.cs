@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using SteeleIT.Api.Library;
+using SteeleIT.Api.Models;
 
-namespace SteeleIT.Api.Http;
+namespace SteeleIT.Api.Services;
 
 /// <summary>The one place that turns a library Result into an HTTP response.</summary>
 public static class ResultMapping

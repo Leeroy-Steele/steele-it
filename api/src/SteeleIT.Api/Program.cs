@@ -1,5 +1,5 @@
 using Scalar.AspNetCore;
-using SteeleIT.Api.Library;
+using SteeleIT.Api.Services;
 
 const string CorsPolicyName = "web-dev";
 

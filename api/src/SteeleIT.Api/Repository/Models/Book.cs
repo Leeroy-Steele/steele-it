@@ -1,4 +1,4 @@
-namespace SteeleIT.Api.Domain;
+namespace SteeleIT.Api.Repository.Models;
 
 /// <summary>A book owns an ordered outline of references to topics.</summary>
 public sealed record Book(

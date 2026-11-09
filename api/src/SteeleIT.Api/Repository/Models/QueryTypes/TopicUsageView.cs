@@ -1,4 +1,4 @@
-namespace SteeleIT.Api.Library;
+namespace SteeleIT.Api.Repository.Models.QueryTypes;
 
 /// <summary>
 /// Every place a topic is used. Built inside the lock so book titles, positions and parent titles

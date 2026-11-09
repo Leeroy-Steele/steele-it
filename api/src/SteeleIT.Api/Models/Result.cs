@@ -1,4 +1,4 @@
-namespace SteeleIT.Api.Library;
+namespace SteeleIT.Api.Models;
 
 /// <summary>
 /// The outcome of a library operation. A closed set: expected failures are values, not exceptions.
