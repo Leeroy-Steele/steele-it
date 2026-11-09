@@ -1,4 +1,4 @@
-namespace SteeleIT.Api.Domain;
+namespace SteeleIT.Api.Repository.Models;
 
 /// <summary>A reusable piece of content that books refer to.</summary>
 public sealed record Topic(

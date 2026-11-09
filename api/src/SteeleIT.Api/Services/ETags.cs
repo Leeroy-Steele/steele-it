@@ -1,7 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SteeleIT.Api.Http;
+namespace SteeleIT.Api.Services;
 
 /// <summary>
 /// A topic's ETag is its version in quotes, for example "3". PUT must send it back in If-Match.

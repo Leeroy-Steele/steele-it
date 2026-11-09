@@ -1,4 +1,5 @@
 using SteeleIT.Api.Domain;
+using SteeleIT.Api.Repository.Models;
 
 namespace SteeleIT.Api.Tests.Domain;
 

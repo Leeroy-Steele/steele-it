@@ -1,6 +1,6 @@
-using SteeleIT.Api.Domain;
+using SteeleIT.Api.Repository.Models;
 
-namespace SteeleIT.Api.Library;
+namespace SteeleIT.Api.Services;
 
 /// <summary>The seed data from docs/spec.md.</summary>
 public static class Seed

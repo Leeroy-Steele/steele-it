@@ -1,3 +1,5 @@
+using SteeleIT.Api.Repository.Models;
+
 namespace SteeleIT.Api.Domain;
 
 /// <summary>

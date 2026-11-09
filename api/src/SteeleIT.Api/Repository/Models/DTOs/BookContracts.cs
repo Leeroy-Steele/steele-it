@@ -1,7 +1,6 @@
-using SteeleIT.Api.Domain;
-using SteeleIT.Api.Library;
+using SteeleIT.Api.Repository.Models.QueryTypes;
 
-namespace SteeleIT.Api.Contracts;
+namespace SteeleIT.Api.Repository.Models.DTOs;
 
 /// <summary>
 /// Body of POST /books. Properties are nullable on purpose, for the same reason as TopicRequest.

@@ -1,6 +1,9 @@
 using SteeleIT.Api.Domain;
+using SteeleIT.Api.Models;
+using SteeleIT.Api.Repository.Models;
+using SteeleIT.Api.Repository.Models.QueryTypes;
 
-namespace SteeleIT.Api.Library;
+namespace SteeleIT.Api.Services;
 
 /// <summary>
 /// Owns all library state. Every public method, reads included, runs entirely inside one lock:

@@ -1,4 +1,4 @@
-namespace SteeleIT.Api.Library;
+namespace SteeleIT.Api.Repository.Models.QueryTypes;
 
 /// <summary>
 /// A book as read from the library, with the derived fields filled in. Built inside the lock so

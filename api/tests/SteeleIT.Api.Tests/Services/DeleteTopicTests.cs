@@ -1,7 +1,9 @@
-using SteeleIT.Api.Domain;
-using SteeleIT.Api.Library;
+using SteeleIT.Api.Models;
+using SteeleIT.Api.Repository.Models;
+using SteeleIT.Api.Repository.Models.QueryTypes;
+using SteeleIT.Api.Services;
 
-namespace SteeleIT.Api.Tests.Library;
+namespace SteeleIT.Api.Tests.Services;
 
 public class DeleteTopicTests
 {
